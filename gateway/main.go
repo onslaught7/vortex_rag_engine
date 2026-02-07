@@ -42,9 +42,16 @@ func main() {
 		// Parse JSON
 		payload := new(IngestRequest)
 		if err := c.BodyParser(payload); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid JSON"})
+		}
+
+		// Push to Redis
+		err := rdb.LPush(ctx, "ingestion_queue", c.Body()).Err()
+		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Redis Queue Failed"})
 		}
 
+		// Response Instantly
 		return c.Status(202).JSON(fiber.Map{
 			"status": "accepted",
 			"message": "Document Queued for Processing",
