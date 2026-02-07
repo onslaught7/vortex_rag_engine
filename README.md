@@ -1,23 +1,8 @@
-This is "The Operator." Here is the **Asset Package** for your repository.
-
-This `README.md` is written to stop a Recruiter or CTO in their tracks. It doesn’t just say "I built a thing." It says "I understand Distributed Systems."
-
-### 1. The Repo Name
-
-**`vortex-rag-engine`**
-
-* *Why:* "Vortex" implies swallowing data fast. "Engine" implies it's a core system, not a toy app.
-
----
-
-### 2. The `README.md` (Copy-Paste this exactly)
-
-```markdown
 # Vortex RAG Engine: High-Throughput Asynchronous Ingestion
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Go](https://img.shields.io/badge/Gateway-Go_1.21-00ADD8.svg)
-![Python](https://img.shields.io/badge/Worker-Python_3.11-3776AB.svg)
+![Python](https://img.shields.io/badge/Worker-Python_3.12-3776AB.svg)
 ![Redis](https://img.shields.io/badge/Broker-Redis-DC382D.svg)
 
 > **The Problem:** Standard RAG applications are synchronous. If a user uploads 50 documents, the web server hangs while waiting for embeddings, leading to timeouts and crashes under load.
@@ -39,7 +24,7 @@ graph LR
     Gateway -->|LPUSH (Instant)| Redis[Redis Queue]
     subgraph "Async Processing Layer"
         Redis -->|BRPOP (Blocking)| Worker[Python AI Worker]
-        Worker -->|Generate Embeddings| OpenAI[Azure OpenAI]
+        Worker -->|Generate Embeddings| OpenAI
         Worker -->|Upsert Vectors| VectorDB[(Vector Store)]
     end
 
@@ -51,7 +36,7 @@ graph LR
 | --- | --- | --- | --- |
 | **The Gateway** | **Go (Fiber)** | Ingestion | Handles 10k+ concurrent requests/sec with minimal RAM. Accepts data and returns `202 Accepted` instantly. |
 | **The Broker** | **Redis** | Message Queue | Acts as a "Shock Absorber" for traffic spikes. Holds tasks until the worker is ready. |
-| **The Worker** | **Python 3.11** | Processing | Leveraging the rich AI ecosystem (LangChain/OpenAI) to handle complex vectorization logic in the background. |
+| **The Worker** | **Python 3.12** | Processing | Leveraging the rich AI ecosystem (LangChain/OpenAI) to handle complex vectorization logic in the background. |
 
 ---
 
@@ -75,7 +60,7 @@ graph LR
 
 1. **Clone the repository**
 ```bash
-git clone [https://github.com/yourusername/vortex-rag-engine.git](https://github.com/yourusername/vortex-rag-engine.git)
+git clone [https://github.com/onslaught7/vortex_rag_engine.git](https://github.com/onslaught7/vortex_rag_engine.git)
 cd vortex-rag-engine
 
 ```
@@ -159,10 +144,3 @@ MIT
 ```
 
 ---
-
-### 3. Your Move
-You have the Name and the Document.
-
-**Are you ready to prompt me to start Phase 1: The `docker-compose.yml` and Infrastructure Setup?**
-
-```
