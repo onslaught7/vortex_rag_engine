@@ -1,23 +1,26 @@
-# 1. Base Image
+# 1. Base Image: Python 3.12 (Slim & Stable)
 FROM python:3.12-slim
 
-# 2. Install uv (The "Senior" Move: Copy binary directly)
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# 2. Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 WORKDIR /app
 
-# 3. Copy dependencies
-COPY requirements.txt .
+# 3. Copy the definition files first (for Docker layer caching)
+COPY pyproject.toml uv.lock ./
 
-# 4. Install with uv
-# --system: Install into system python (no venv needed inside container)
-# --no-cache: Keep image small
-RUN uv pip install --system --no-cache -r requirements.txt
+# 4. Install dependencies
+# --frozen: Ensures we use exactly what is in uv.lock
+# --no-dev: Skip test/dev dependencies
+RUN uv sync --frozen --no-dev
 
-# 5. Copy Application Code
+# 5. Copy your application logic
 COPY worker.py .
 
-# 6. Runtime Config
+# 6. Set Environment
+# IMPORTANT: Point to the virtual environment uv created
+ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
+# 7. Run
 CMD ["python", "worker.py"]
