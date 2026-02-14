@@ -3,20 +3,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSetting):
     # Required Variables
-    openai_api_key: str
+    OPENAI_API_KEY: str
 
     # Optional Variables (With Defaults)
-    redis_url: str = "localhost"
-    redis_port: int = 6379
-    qdrant_url: str = "localhost"
-    qdrant_port: int = 6333
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    QDRANT_HOST: str = "localhost"
+    QDRANT_PORT: int = 6333
     
     # Collection Names (Hardcoded or Configurable)
-    colection_wisdom: str = "wisdom"
-    Collection_wire: str = "wire"
+    COLLECTION_WISDOM: str = "wisdom"
+    COLLECTION_WIRE: str = "wire"
     
     # Configuration to load from .env automatically
-    model_congit = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
 settings = Settings()
