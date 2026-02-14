@@ -1,31 +1,25 @@
-# Vortex RAG Engine: High-Throughput Asynchronous Ingestion
+# MarketPulse Engine: High-Throughput Financial Intelligence
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Go](https://img.shields.io/badge/Gateway-Go_1.21-00ADD8.svg)
-![Python](https://img.shields.io/badge/Worker-Python_3.12-3776AB.svg)
-![Redis](https://img.shields.io/badge/Broker-Redis-DC382D.svg)
-
-> **The Problem:** Standard RAG applications are synchronous. If a user uploads 50 documents, the web server hangs while waiting for embeddings, leading to timeouts and crashes under load.
-> 
-> **The Solution:** Vortex is a decoupled ingestion engine. It uses **Go** for high-concurrency request handling and **Python** for background AI processing, linked by a **Redis** buffer.
+> **The Technical Challenge:** Standard RAG applications are synchronous. If a user uploads 50 documents (e.g., 10-K filings), the web server hangs while waiting for embeddings, leading to timeouts (504 Errors) and crashes under load.
+> **The Solution:** MarketPulse is an **Asynchronous RAG Engine**. It separates ingestion from processing using a **Go** gateway and **Redis** buffer, allowing it to ingest massive financial datasets instantly while a **Python** brain processes them in the background.
 
 ---
 
 ## 🏗 Architecture
 
-The system is designed to handle **burst traffic** without dropping requests.
+The system is designed to handle **burst traffic** (like Earnings Season) without dropping requests.
 
 ```mermaid
 graph LR
-    Client["Client / Frontend"] -- "POST /ingest (JSON)" --> Gateway
     subgraph "High-Speed Ingestion Layer"
-        Gateway["Go API Gateway (Fiber)"]
+        Client["Client / Feed"] -- "POST /ingest (JSON)" --> Gateway["Go API Gateway"]
     end
     Gateway -- "LPUSH (Instant)" --> Redis["Redis Queue"]
+    
     subgraph "Async Processing Layer"
         Redis -- "BRPOP (Blocking)" --> Worker["Python AI Worker"]
-        Worker -- "Generate Embeddings" --> OpenAI
-        Worker -- "Upsert Vectors" --> VectorDB[("Vector Store")]
+        Worker -- "Embed & Tag" --> OpenAI
+        Worker -- "Upsert w/ Metadata" --> Qdrant[("Qdrant Vector DB")]
     end
 
 ```
@@ -34,17 +28,32 @@ graph LR
 
 | Service | Tech Stack | Role | Why this tech? |
 | --- | --- | --- | --- |
-| **The Gateway** | **Go (Fiber)** | Ingestion | Handles 10k+ concurrent requests/sec with minimal RAM. Accepts data and returns `202 Accepted` instantly. |
-| **The Broker** | **Redis** | Message Queue | Acts as a "Shock Absorber" for traffic spikes. Holds tasks until the worker is ready. |
-| **The Worker** | **Python 3.12** | Processing | Leveraging the rich AI ecosystem (LangChain/OpenAI) to handle complex vectorization logic in the background. |
+| **The Gateway** | **Go (Fiber)** | Ingestion | Handles 10k+ concurrent requests/sec. Eliminates the "GIL" bottleneck of Python servers. |
+| **The Buffer** | **Redis** | Message Queue | Acts as a "Shock Absorber." If OpenAI latency spikes, the queue grows, but the server stays up. |
+| **The Brain** | **Python 3.12** | Semantic Processing | Uses `uv` for fast dependency management. Handles the complex financial logic (Chunking/Embedding). |
+| **The Memory** | **Qdrant** | Vector Database | Stores vectors with **Metadata Passports** (Region, Topic) for surgical retrieval. |
+
+---
+
+## 💼 The Business Case: "The Wisdom & The Wire"
+
+I applied this architecture to solve a critical problem in FinTech: **Information Overload.**
+
+* **The Problem:** Financial analysts cannot process real-time news ("The Wire") and cross-reference it with deep fundamental strategy ("The Wisdom") without latency or hallucination.
+* **The Implementation:**
+* **The Wire:** The Go Gateway ingests live RSS/News feeds instantly.
+* **The Wisdom:** The Python Worker indexes static PDFs (e.g., *The Intelligent Investor*).
+* **The Result:** A system that can answer: *"Based on Benjamin Graham's principles, how should I react to today's inflation news?"*
+
+
 
 ---
 
 ## 🚀 Key Features
 
-* **Non-Blocking I/O:** The Go Gateway never waits for OpenAI. It acknowledges receipt and offloads the work.
-* **Backpressure Handling:** Redis acts as a buffer. If the AI API is slow, the Queue grows, but the Gateway keeps accepting new traffic.
-* **Polyglot Architecture:** Demonstrates the "Right Tool for the Job" philosophy—Go for speed, Python for Logic.
+* **Non-Blocking I/O:** The Go Gateway acknowledges data receipt in microseconds (`202 Accepted`), preventing client timeouts during large file uploads.
+* **Metadata Passporting:** Every document is tagged with `region` (US/India) and `topic`. The AI knows not to apply US Tax Law to Indian Stocks.
+* **Smart Chunking:** Uses context-aware splitters (RecursiveCharacter) to keep financial concepts intact across page breaks.
 * **Dockerized:** Entire stack spins up with a single compose command.
 
 ---
@@ -60,8 +69,8 @@ graph LR
 
 1. **Clone the repository**
 ```bash
-git clone [https://github.com/onslaught7/vortex_rag_engine.git](https://github.com/onslaught7/vortex_rag_engine.git)
-cd vortex-rag-engine
+git clone https://github.com/onslaught7/market-pulse-engine.git
+cd market-pulse-engine
 
 ```
 
@@ -71,7 +80,7 @@ Create a `.env` file in the root:
 ```env
 OPENAI_API_KEY=sk-your-key-here
 REDIS_HOST=redis
-REDIS_PORT=6379
+QDRANT_HOST=qdrant
 
 ```
 
@@ -88,17 +97,18 @@ docker-compose up --build
 
 ## ⚡ Usage
 
-### 1. Ingest a Document
+### 1. Ingest a Document (Simulate High Load)
 
-Send a request to the Go Gateway. It will respond instantly.
+Send a request to the Go Gateway. It will respond instantly, proving the async architecture works.
 
 ```bash
 curl -X POST http://localhost:8080/ingest \
   -H "Content-Type: application/json" \
   -d '{
-    "user_id": "u-123",
-    "document_id": "doc-001",
-    "content": "Golang is excellent for high-throughput systems due to goroutines."
+    "user_id": "analyst_01",
+    "document_id": "report_2024_Q3",
+    "content": "Inflation remains sticky at 6%...",
+    "metadata": {"region": "global", "type": "news"}
   }'
 
 ```
@@ -116,12 +126,12 @@ curl -X POST http://localhost:8080/ingest \
 
 ### 2. Check the Worker Logs
 
-You will see the Python worker pick up the task asynchronously:
+The Python worker picks up the task asynchronously:
 
 ```text
-[Worker] Processing task job-550e8400-e29b...
-[Worker] Embedding generated (1536 dims).
-[Worker] Saved to Vector Store. Time taken: 0.4s
+[Worker] Processing report_2024_Q3...
+[Worker] Type: 'news' | Region: 'global'
+[Worker] Indexed in 'wire' collection. Time: 0.4s
 
 ```
 
@@ -129,18 +139,14 @@ You will see the Python worker pick up the task asynchronously:
 
 ## 🧠 Engineering Decisions
 
-**Why not just use Python for everything?**
-Python's `asyncio` is great, but under heavy CPU load (like JSON validation at scale), the GIL (Global Interpreter Lock) becomes a bottleneck. Go's goroutines allow us to handle thousands of concurrent connections with a tiny memory footprint.
+**Why Go for Ingestion?**
+Python's GIL bottlenecks under high-concurrency HTTP loads. When processing 100+ concurrent PDF uploads, standard Python servers often crash or time out. Go handles these connections with goroutines using a fraction of the RAM.
 
-**Why Redis instead of Kafka?**
-For this scale, Redis List (`LPUSH`/`BRPOP`) provides the perfect balance of simplicity and performance (<1ms latency). Kafka would introduce unnecessary operational complexity for a simple job queue.
+**Why Qdrant instead of Pinecone?**
+We need **Metadata Filtering** ("Show me only Indian stocks") to prevent the AI from hallucinating across markets. Qdrant's payload filtering is blazing fast and runs locally in Docker, allowing for a fully self-hosted stack.
 
 ---
 
 ## 📜 License
 
 MIT
-
-```
-
----
