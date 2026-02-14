@@ -12,13 +12,13 @@ from config import settings
 
 # The financial passport metadata schema
 LIBRARY_MAP = {
-    "intelligent_investor.pdf": {
+    "the_intelligent_investor.pdf": {
         "title": "The Intelligent Investor",
         "author": "Benjamin Graham",
         "region": "global",
         "topic": "value_investing"
     },
-    "psychology_of_money.pdf": {
+    "the_psychology_of_money.pdf": {
         "title": "The Psychology of Money",
         "author": "Morgan Housel",
         "region": "global",

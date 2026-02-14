@@ -2,6 +2,13 @@
 # technical_concepts.md
 ROADMAP.md
 .env
+__pycache__
+
+# virtual environment
+.venv
+
+# docker volumes
+qdrant_data/
 
 # data
 data/

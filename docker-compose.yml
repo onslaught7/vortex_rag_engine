@@ -1,5 +1,5 @@
 services:
-  # Redis (The Broker)
+  # 1. Redis (The Broker)
   redis:
     image: redis:alpine
     container_name: vortex-redis
@@ -8,7 +8,19 @@ services:
     networks:
       - vortex-net
 
-  # GO (The Gateway)
+  # 2. Qdrant (The Vector Database)
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: vortex-qdrant
+    ports:
+      - "6333:6333"
+    # Mount a volume so data persists across restarts
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    networks:
+      - vortex-net
+
+  # 3. GO (The Gateway)
   gateway:
     build:
       context: ./gateway
@@ -23,7 +35,7 @@ services:
     networks:
       - vortex-net
 
-  # Python (The Worker)
+  # 4. Python (The Worker)
   worker:
     build:
       context: ./worker
@@ -31,9 +43,11 @@ services:
     container_name: vortex-worker
     environment:
       - REDIS_HOST=redis
+      - QDRANT_HOST=qdrant  # <--- Added this so worker finds DB
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - redis
+      - qdrant              # <--- Worker waits for DB to start
     networks:
       - vortex-net
 
