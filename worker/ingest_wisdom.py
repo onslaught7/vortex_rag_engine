@@ -53,7 +53,7 @@ def ingest_books():
 
     if not settings.OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY not set.")
-    # The embedding fails if I ever changet he model (1536 = 1536)
+    # The embedding fails if I ever change the model (1536 = 1536)
     embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key=settings.OPENAI_API_KEY)
 
     splitter = RecursiveCharacterTextSplitter(
@@ -97,6 +97,7 @@ def ingest_books():
                 points = []
                 for j, text in enumerate(texts):
                     unique_string = f"{filename}_chunk_{i+j}"
+                    # uuid5 is used to make sure the same unique string is always mapped to the same uuid
                     point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_string))
 
                     clean_text = text.replace("\x00", "").strip()
